@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest'
-import {parseMoney,parsePlatformStatus,parsePlatformSummary} from './parsers'
+import {parseMoney,parseOptionalNumber,parsePlatformStatus,parsePlatformSummary} from './parsers'
 import {getPlatform,isPlatformId} from '../config/platforms'
 describe('API response parsing',()=>{it('parses a normalized platform contract and preserves zero data',()=>{expect(parsePlatformSummary({platform:'pos',users:0,status:'healthy',lastUpdatedAt:'2026-08-31T10:00:00Z'})).toMatchObject({platform:'pos',users:0,status:'healthy'})});it('rejects database-specific or unregistered contracts',()=>{expect(()=>parsePlatformSummary({student_count:200,status:'healthy',lastUpdatedAt:'x'})).toThrow();expect(()=>parsePlatformSummary({platform:'other',status:'healthy',lastUpdatedAt:'x'})).toThrow()});it('degrades unknown status values safely',()=>expect(parsePlatformStatus('ONLINE')).toBe('unknown'));it('rejects incomplete money values',()=>expect(parseMoney({amount:100})).toBeUndefined())})
 describe('platform mapping',()=>{it('maps every supported platform to its route',()=>{expect(isPlatformId('gradepoa')).toBe(true);expect(getPlatform('pos').route).toBe('/platforms/pos');expect(isPlatformId('new-product')).toBe(false)})})
+describe('nullable analytics',()=>{it('preserves confirmed zero and rejects null or non-finite values',()=>{expect(parseOptionalNumber(0)).toBe(0);expect(parseOptionalNumber(null)).toBeUndefined();expect(parseOptionalNumber(Number.NaN)).toBeUndefined()})})
