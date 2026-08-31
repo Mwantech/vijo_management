@@ -40,6 +40,15 @@ describe('Vijo Management API routes', () => {
     expect(response.body.error.code).toBe('UNAUTHORIZED')
   })
 
+  it('serves the compiled frontend and SPA routes from the production server', async () => {
+    const root = await request(createManagementApp()).get('/')
+    const dashboard = await request(createManagementApp()).get('/dashboard')
+    expect(root.status).toBe(200)
+    expect(root.type).toContain('html')
+    expect(dashboard.status).toBe(200)
+    expect(dashboard.text).toContain('<div id="root"></div>')
+  })
+
   it('authenticates an administrator with an HTTP-only session', async () => {
     const response = await request(createManagementApp()).post('/api/management/auth/login').send({ email: 'admin@nexvijo.com', password: 'secure-password' })
     expect(response.status).toBe(200)

@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:api": "node server/index.js",
     "dev:all": "node scripts/dev-all.mjs",
+    "start": "node server/index.js",
     "password:hash": "node scripts/generate-password-hash.mjs",
     "secrets:generate": "node scripts/generate-management-secrets.mjs",
     "build": "vite build",

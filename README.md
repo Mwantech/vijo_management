@@ -40,6 +40,16 @@ pnpm secrets:generate
 
 The command prints private values once. Copy them directly to the relevant deployment secret stores and do not commit or expose the output in any `VITE_*` variable.
 
+For a single Render Web Service, use:
+
+```text
+Build Command: pnpm install --frozen-lockfile && pnpm build
+Start Command: pnpm start
+Health Check Path: /api/health
+```
+
+Do not use `pnpm dev:all` in production. The production server serves both the compiled React application and `/api/management` from one origin. Leave `VITE_MANAGEMENT_API_URL` unset (or empty) for this deployment model. Render supplies `PORT`; the server binds to it on `0.0.0.0`.
+
 The deployment configuration currently points to:
 
 | Platform | Backend |

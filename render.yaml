@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: vijo-management
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MANAGEMENT_HOST
+        value: 0.0.0.0
+      - key: MANAGEMENT_COOKIE_SAME_SITE
+        value: Strict
+      - key: MANAGEMENT_TRUST_PROXY
+        value: "true"
+      - key: MANAGEMENT_ADMIN_EMAIL
+        sync: false
+      - key: MANAGEMENT_ADMIN_PASSWORD_HASH
+        sync: false
+      - key: MANAGEMENT_SESSION_SECRET
+        sync: false
+      - key: MANAGEMENT_API_KEY
+        sync: false
+      - key: GRADEPOA_MANAGEMENT_API_KEY
+        sync: false
+      - key: GRADEPOA_MANAGEMENT_API_SECRET
+        sync: false
+      - key: GOODSCENES_MANAGEMENT_API_KEY
+        sync: false
+      - key: GOODSCENES_MANAGEMENT_API_SECRET
+        sync: false
+      - key: HMS_MANAGEMENT_API_KEY
+        sync: false
+      - key: HMS_MANAGEMENT_API_SECRET
+        sync: false
+      - key: VIJOPOS_MANAGEMENT_API_KEY
+        sync: false
+      - key: VIJOPOS_MANAGEMENT_API_SECRET
+        sync: false
