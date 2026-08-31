@@ -5,10 +5,15 @@ import { PlatformError } from '../../errors.js'
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
 const errorForStatus = (platform, status, message) => {
-  if (status === 401 || status === 403) return new PlatformError(platform, 'PLATFORM_AUTH_FAILED', message, 502)
-  if (status === 404) return new PlatformError(platform, 'UPSTREAM_ROUTE_NOT_FOUND', message, 502)
-  if (status >= 500) return new PlatformError(platform, 'PLATFORM_UNAVAILABLE', message, 503)
-  return new PlatformError(platform, 'UPSTREAM_ERROR', message, 502)
+  const error = status === 401 || status === 403
+    ? new PlatformError(platform, 'PLATFORM_AUTH_FAILED', message, 502)
+    : status === 404
+      ? new PlatformError(platform, 'UPSTREAM_ROUTE_NOT_FOUND', message, 502)
+      : status >= 500
+        ? new PlatformError(platform, 'PLATFORM_UNAVAILABLE', message, 503)
+        : new PlatformError(platform, 'UPSTREAM_ERROR', message, 502)
+  error.upstreamStatusCode = status
+  return error
 }
 
 export function createPlatformClient(config) {
@@ -33,9 +38,14 @@ export function createPlatformClient(config) {
         const response = await fetch(url, { method: 'GET', headers, signal: controller.signal })
         const text = await response.text()
         let body
-        try { body = text ? JSON.parse(text) : undefined } catch { throw new PlatformError(config.id, 'UPSTREAM_INVALID_RESPONSE', `${config.name} returned a non-JSON response.`, 502) }
+        try { body = text ? JSON.parse(text) : undefined } catch {
+          if (!response.ok) throw errorForStatus(config.id, response.status, `${config.name} returned HTTP ${response.status} with a non-JSON response.`)
+          throw new PlatformError(config.id, 'UPSTREAM_INVALID_RESPONSE', `${config.name} returned a non-JSON response.`, 502)
+        }
         if (!response.ok) throw errorForStatus(config.id, response.status, body?.error?.message || body?.message || `${config.name} returned HTTP ${response.status}.`)
-        return { data: body?.success === true && 'data' in body ? body.data : body, pagination: body?.pagination, latencyMs: Math.round(performance.now() - startedAt) }
+        const latencyMs = Math.round(performance.now() - startedAt)
+        console.log(JSON.stringify({ level: 'info', event: 'platform_request_completed', requestId: correlationId, platform: config.id, method: 'GET', route: url.pathname, statusCode: response.status, responseTimeMs: latencyMs, attempt: attempt + 1 }))
+        return { data: body?.success === true && 'data' in body ? body.data : body, pagination: body?.pagination, latencyMs }
       } catch (error) {
         const normalized = error?.name === 'AbortError'
           ? new PlatformError(config.id, 'PLATFORM_TIMEOUT', `${config.name} timed out.`, 504)
@@ -44,6 +54,7 @@ export function createPlatformClient(config) {
           await wait(150 * (2 ** attempt))
           return attemptRequest(attempt + 1)
         }
+        console.warn(JSON.stringify({ level: 'warn', event: 'platform_request_failed', requestId: correlationId, platform: config.id, method: 'GET', route: url.pathname, upstreamStatusCode: normalized.upstreamStatusCode, errorCode: normalized.code, responseTimeMs: Math.round(performance.now() - startedAt), attempt: attempt + 1 }))
         throw normalized
       } finally {
         clearTimeout(timeout)

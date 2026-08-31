@@ -5,7 +5,7 @@ const config = { id: 'gradepoa', name: 'GradePoa', enabled: true, baseUrl: 'http
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
 describe('platform HTTP client', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
   it('propagates request IDs and keeps service credentials in backend headers', async () => {
     const fetchMock = vi.fn(async (url, options) => {
@@ -28,7 +28,17 @@ describe('platform HTTP client', () => {
   })
 
   it('normalizes upstream authentication failures', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.stubGlobal('fetch', vi.fn(async () => json({ success: false, error: { message: 'bad key' } }, 401)))
     await expect(createPlatformClient(config).get('/internal/management/summary', { retries: 0 })).rejects.toMatchObject({ code: 'PLATFORM_AUTH_FAILED', status: 502 })
+    expect(warning).toHaveBeenCalledOnce()
+    expect(warning.mock.calls.flat().join(' ')).not.toContain(config.apiKey)
+    expect(warning.mock.calls.flat().join(' ')).not.toContain(config.apiSecret)
+  })
+
+  it('normalizes a non-JSON missing route using its upstream status', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>missing</html>', { status: 404, headers: { 'Content-Type': 'text/html' } })))
+    await expect(createPlatformClient(config).get('/internal/management/users', { retries: 0 })).rejects.toMatchObject({ code: 'UPSTREAM_ROUTE_NOT_FOUND', upstreamStatusCode: 404 })
   })
 })

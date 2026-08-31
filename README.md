@@ -90,6 +90,8 @@ Set `VITE_MANAGEMENT_API_URL` to the centralized backend. The browser only calls
 
 Normalized contracts live in `src/types/models.ts`. Isolated product adapters and mappers live in `server/platforms`. The gateway uses bounded retries for safe GET requests, upstream timeouts, short-lived analytics caches with single-flight deduplication, request IDs, structured logs, audit events, validation, strict CORS, rate limiting, and partial failure responses. It never falls back to fake analytics.
 
+Gateway logs use `platform_request_completed` and `platform_request_failed` events. Product backends log `management_service_auth_failed` with boolean `keyValid`, `signatureValid`, and `timestampValid` diagnostics. These events include request IDs for correlation but never include credential values or authorization headers.
+
 Backend-enforced RBAC supports `super_admin`, `admin`, `finance`, `support` and `viewer`. Production browser login requires `MANAGEMENT_ADMIN_PASSWORD_HASH`; plain `MANAGEMENT_ADMIN_PASSWORD` is development-only. API clients can use `X-Management-Api-Key`.
 
 Product internal routes are:
