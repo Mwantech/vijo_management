@@ -1,0 +1,3 @@
+import {describe,expect,it} from 'vitest'
+import {currenciesMatch,formatMoney,formatNumber} from './format'
+describe('formatting',()=>{it('formats confirmed zero rather than an unknown value',()=>{expect(formatNumber(0)).toBe('0');expect(formatNumber(undefined)).toBe('—')});it('formats arbitrary ISO currencies from the model',()=>{expect(formatMoney({amount:1250,currency:'USD'})).toContain('1,250');expect(formatMoney({amount:1250,currency:'KES'})).toContain('1,250')});it('detects unsafe mixed-currency totals',()=>{expect(currenciesMatch([{amount:1,currency:'KES'},{amount:2,currency:'USD'}])).toBe(false);expect(currenciesMatch([{amount:1,currency:'KES'},undefined])).toBe(true)})})

@@ -1,0 +1,4 @@
+import {afterEach,describe,expect,it,vi} from 'vitest'
+import {apiRequest,ApiError,toQueryString} from './client'
+afterEach(()=>vi.unstubAllGlobals())
+describe('API client',()=>{it('builds query strings without undefined values',()=>expect(toQueryString({page:2,search:'amina',status:undefined})).toBe('?page=2&search=amina'));it('returns parsed JSON',async()=>{vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response(JSON.stringify({users:0}),{status:200,headers:{'Content-Type':'application/json'}})));await expect(apiRequest('/test')).resolves.toEqual({users:0})});it('surfaces failed API responses instead of fake data',async()=>{vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response(JSON.stringify({message:'HMS unavailable'}),{status:503,headers:{'Content-Type':'application/json'}})));await expect(apiRequest('/test')).rejects.toMatchObject<ApiError>({message:'HMS unavailable',status:503})})})

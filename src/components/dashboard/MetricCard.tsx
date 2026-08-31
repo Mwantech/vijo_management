@@ -1,0 +1,3 @@
+import type { ReactNode } from 'react'
+import { formatPercent } from '../../utils/format'
+export function MetricCard({label,value,detail,growth,comparison,icon}:{label:string;value:string;detail?:ReactNode;growth?:number;comparison?:string;icon?:ReactNode}) {return <article className="metric-card"><div className="metric-top"><span>{label}</span>{icon&&<span className="metric-icon">{icon}</span>}</div><strong className="metric-value">{value}</strong>{detail&&<div className="metric-detail">{detail}</div>}{growth!==undefined&&<div className="metric-growth"><span className={growth>=0?'positive':'negative'}>{formatPercent(growth)}</span><span>{comparison}</span></div>}</article>}
