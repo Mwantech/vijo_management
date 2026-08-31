@@ -63,16 +63,16 @@ Each product must be deployed with its new `/internal/management/*` routes. Ever
 
 | Gateway variable | Matching product deployment variable |
 | --- | --- |
-| `GRADEPOA_MANAGEMENT_API_KEY` | GradePoa `MANAGEMENT_API_KEY` |
-| `GRADEPOA_MANAGEMENT_API_SECRET` | GradePoa `MANAGEMENT_API_SECRET` |
-| `GOODSCENES_MANAGEMENT_API_KEY` | GoodScenes `MANAGEMENT_API_KEY` |
-| `GOODSCENES_MANAGEMENT_API_SECRET` | GoodScenes `MANAGEMENT_API_SECRET` |
-| `HMS_MANAGEMENT_API_KEY` | HMS `MANAGEMENT_API_KEY` |
-| `HMS_MANAGEMENT_API_SECRET` | HMS `MANAGEMENT_API_SECRET` |
-| `VIJOPOS_MANAGEMENT_API_KEY` | VijoPOS `MANAGEMENT_API_KEY` |
-| `VIJOPOS_MANAGEMENT_API_SECRET` | VijoPOS `MANAGEMENT_API_SECRET` |
+| `GRADEPOA_MANAGEMENT_API_KEY` | GradePoa `VIJO_MANAGEMENT_API_KEY` |
+| `GRADEPOA_MANAGEMENT_API_SECRET` | GradePoa `VIJO_MANAGEMENT_API_SECRET` |
+| `GOODSCENES_MANAGEMENT_API_KEY` | GoodScenes `VIJO_MANAGEMENT_API_KEY` |
+| `GOODSCENES_MANAGEMENT_API_SECRET` | GoodScenes `VIJO_MANAGEMENT_API_SECRET` |
+| `HMS_MANAGEMENT_API_KEY` | HMS `VIJO_MANAGEMENT_API_KEY` |
+| `HMS_MANAGEMENT_API_SECRET` | HMS `VIJO_MANAGEMENT_API_SECRET` |
+| `VIJOPOS_MANAGEMENT_API_KEY` | VijoPOS `VIJO_MANAGEMENT_API_KEY` |
+| `VIJOPOS_MANAGEMENT_API_SECRET` | VijoPOS `VIJO_MANAGEMENT_API_SECRET` |
 
-Do not reuse one pair across platforms. Independent pairs limit the impact of a leak and allow one integration to be revoked or rotated without taking all products offline. The top-level gateway `MANAGEMENT_API_KEY` is different again: it authenticates trusted non-browser callers to the Vijo Management API and is never sent to product backends.
+Do not reuse one pair across platforms. Independent pairs limit the impact of a leak and allow one integration to be revoked or rotated without taking all products offline. The top-level gateway `VIJO_MANAGEMENT_API_KEY` is different again: it authenticates trusted non-browser callers to the Vijo Management API and is never sent to product backends.
 
 Browser administrators authenticate through:
 
@@ -82,7 +82,7 @@ GET /api/management/auth/me
 POST /api/management/auth/logout
 ```
 
-The API sets an HTTP-only `vijo_management_session` cookie. Server-to-server callers can use `X-Management-Api-Key: <MANAGEMENT_API_KEY>`. Product backend tokens/API keys are only used by the server-side platform adapters.
+The API sets an HTTP-only `vijo_management_session` cookie. Server-to-server callers can use `X-Management-Api-Key: <VIJO_MANAGEMENT_API_KEY>`. Product backend tokens/API keys are only used by the server-side platform adapters.
 
 ## Integration boundary
 

@@ -12,7 +12,7 @@ const safeEqual = (left, right) => {
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
-const secret = () => process.env.MANAGEMENT_SESSION_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'local-development-session-secret-change-me')
+const secret = () => process.env.VIJO_MANAGEMENT_SESSION_SECRET || process.env.MANAGEMENT_SESSION_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'local-development-session-secret-change-me')
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString('base64url')
 const sign = (payload) => createHmac('sha256', secret()).update(payload).digest('base64url')
 const cookieOptions = () => {
@@ -67,7 +67,7 @@ export function sessionUser(req) {
 }
 
 export function apiKeyUser(req) {
-  const expected = process.env.MANAGEMENT_API_KEY
+  const expected = process.env.VIJO_MANAGEMENT_API_KEY || process.env.MANAGEMENT_API_KEY
   if (!expected) return undefined
   const authorization = req.get('Authorization') || ''
   const provided = req.get('X-Management-Api-Key') || (authorization.startsWith('Bearer ') ? authorization.slice(7) : '')

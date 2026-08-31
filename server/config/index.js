@@ -68,12 +68,18 @@ export function platformConfig(id) {
 export function assertProductionConfig() {
   if (process.env.NODE_ENV !== 'production') return
   const requiredGatewayVariables = [
-    'MANAGEMENT_SESSION_SECRET',
+    'VIJO_MANAGEMENT_SESSION_SECRET',
     'MANAGEMENT_ADMIN_EMAIL',
     'MANAGEMENT_ADMIN_PASSWORD_HASH',
-    'MANAGEMENT_API_KEY',
+    'VIJO_MANAGEMENT_API_KEY',
   ]
-  const missingGatewayVariables = requiredGatewayVariables.filter((name) => !process.env[name]?.trim())
+  const gatewayValues = {
+    VIJO_MANAGEMENT_SESSION_SECRET: process.env.VIJO_MANAGEMENT_SESSION_SECRET || process.env.MANAGEMENT_SESSION_SECRET,
+    MANAGEMENT_ADMIN_EMAIL: process.env.MANAGEMENT_ADMIN_EMAIL,
+    MANAGEMENT_ADMIN_PASSWORD_HASH: process.env.MANAGEMENT_ADMIN_PASSWORD_HASH,
+    VIJO_MANAGEMENT_API_KEY: process.env.VIJO_MANAGEMENT_API_KEY || process.env.MANAGEMENT_API_KEY,
+  }
+  const missingGatewayVariables = requiredGatewayVariables.filter((name) => !gatewayValues[name]?.trim())
   if (missingGatewayVariables.length) {
     throw new Error(`Missing required production environment variables: ${missingGatewayVariables.join(', ')}`)
   }
