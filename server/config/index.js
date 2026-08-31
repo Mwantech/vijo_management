@@ -67,13 +67,26 @@ export function platformConfig(id) {
 
 export function assertProductionConfig() {
   if (process.env.NODE_ENV !== 'production') return
-  if (!process.env.MANAGEMENT_SESSION_SECRET || !process.env.MANAGEMENT_ADMIN_EMAIL || !process.env.MANAGEMENT_ADMIN_PASSWORD_HASH || !process.env.MANAGEMENT_API_KEY) {
-    throw new Error('Production requires MANAGEMENT_SESSION_SECRET, MANAGEMENT_ADMIN_EMAIL, MANAGEMENT_ADMIN_PASSWORD_HASH, and MANAGEMENT_API_KEY')
+  const requiredGatewayVariables = [
+    'MANAGEMENT_SESSION_SECRET',
+    'MANAGEMENT_ADMIN_EMAIL',
+    'MANAGEMENT_ADMIN_PASSWORD_HASH',
+    'MANAGEMENT_API_KEY',
+  ]
+  const missingGatewayVariables = requiredGatewayVariables.filter((name) => !process.env[name]?.trim())
+  if (missingGatewayVariables.length) {
+    throw new Error(`Missing required production environment variables: ${missingGatewayVariables.join(', ')}`)
   }
   for (const id of PLATFORM_IDS) {
     const config = platformConfig(id)
-    if (config.enabled && (!config.apiKey || !config.apiSecret)) {
-      throw new Error(`${config.name} requires both a management API key and HMAC secret`)
+    if (config.enabled) {
+      const missingPlatformVariables = [
+        !config.apiKey?.trim() ? `${definitions[id].prefix}_MANAGEMENT_API_KEY` : undefined,
+        !config.apiSecret?.trim() ? `${definitions[id].prefix}_MANAGEMENT_API_SECRET` : undefined,
+      ].filter(Boolean)
+      if (missingPlatformVariables.length) {
+        throw new Error(`Missing required ${config.name} environment variables: ${missingPlatformVariables.join(', ')}`)
+      }
     }
   }
 }
