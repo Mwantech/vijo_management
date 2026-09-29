@@ -3,7 +3,14 @@ export interface Membership { membershipId: string; email: string; plan: string;
 export interface MembershipDetail extends Membership { events: { eventId: string; type: string; actor: string; reason?: string; createdAt: string }[]; receipts: { providerPaymentId: string; amount: string; currency: string; paidAt: string; refundedAmount: string }[] }
 export interface BlogPost { slug: string; title: string; excerpt: string; content: string; visibility: 'public' | 'premium'; category: string; published: boolean }
 const base = '/api/management'
+export interface MembershipServiceStatus {
+  databaseReady: boolean; customerLoginReady: boolean; automaticWhopSyncReady: boolean
+  databaseIssue: { code: string; fields: string[] } | null
+  loginIssue: { code: string; fields: string[] } | null
+  providerIssue: { code: string; fields: string[] } | null
+}
 export const membershipsApi = {
+  status: (signal?: AbortSignal) => apiRequest<MembershipServiceStatus>(`${base}/memberships/status`, { signal }),
   list: (page: number, search: string, signal?: AbortSignal) => apiRequest<{items: Membership[]; totalPages: number; total: number}>(`${base}/memberships`, { signal }, { page, search, limit: 20 }),
   detail: (id: string, signal?: AbortSignal) => apiRequest<MembershipDetail>(`${base}/memberships/${encodeURIComponent(id)}`, { signal }),
   action: (id: string, action: 'grant' | 'revoke', reason: string) => apiRequest(`${base}/memberships/${encodeURIComponent(id)}/${action}`, { method: 'POST', body: JSON.stringify({ reason }) }),

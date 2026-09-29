@@ -28,6 +28,25 @@ beforeAll(async () => {
 }, 120000)
 afterAll(async () => { await ctx?.connection.close(); await repl?.stop() })
 
+it('keeps administrator reads available without email login and protects service diagnostics', async () => {
+  const previous = ctx.memberships.enabled
+  const admin = createSessionCookie({ id: 'a', role: 'super_admin' }).split(';')[0]
+  const support = createSessionCookie({ id: 's', role: 'support' }).split(';')[0]
+  ctx.memberships.enabled = false
+  try {
+    expect((await request(app).get('/api/management/memberships').set('Cookie', admin)).status).toBe(200)
+    expect((await request(app).get('/api/content/posts')).status).toBe(200)
+    expect((await request(app).get('/api/membership/me')).status).toBe(503)
+    expect((await request(app).get('/api/management/memberships/status')).status).toBe(401)
+    expect((await request(app).get('/api/management/memberships/status').set('Cookie', support)).status).toBe(403)
+    ctx.ready = false
+    const status = await request(app).get('/api/management/memberships/status').set('Cookie', admin)
+    expect(status.status).toBe(200)
+    expect(status.body.data.databaseReady).toBe(false)
+    expect((await request(app).get('/api/management/memberships').set('Cookie', admin)).status).toBe(503)
+  } finally { ctx.ready = true; ctx.memberships.enabled = previous }
+})
+
 it('ignores other products and requires a verified paid purchase', async () => {
   expect(await fulfill(ctx, { ...membership, product: { id: 'prod_other' } }, payment, 'evt_other')).toEqual({ ignored: true })
   await fulfill(ctx, membership, undefined, 'evt_activation')

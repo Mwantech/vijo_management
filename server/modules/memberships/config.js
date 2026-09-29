@@ -1,12 +1,14 @@
 import { z } from 'zod'
 import { fail } from '../payments/domain.js'
+import { ApiError } from '../../errors.js'
 export function membershipConfig(env = process.env) {
   if (env.MEMBERSHIPS_ENABLED !== 'true') return { enabled: false }
   const result = z.object({
     MEMBERSHIP_WEBSITE_ORIGIN: z.string().url(), MEMBERSHIP_OTP_PEPPER: z.string().min(32),
     RESEND_API_KEY: z.string().min(10), RESEND_FROM_EMAIL: z.string().min(5),
   }).safeParse(env)
-  if (!result.success) fail('MEMBERSHIP_CONFIGURATION', 'Membership configuration is incomplete.', 503)
+  if (!result.success) throw new ApiError('MEMBERSHIP_CONFIGURATION', 'Membership configuration is incomplete.', 503,
+    { fields: result.error.issues.map(issue => issue.path[0]) })
   const v = result.data, origin = new URL(v.MEMBERSHIP_WEBSITE_ORIGIN).origin
   const productId = env.WHOP_PREMIUM_BLOG_PRODUCT_ID || ''
   const planIds = (env.WHOP_PREMIUM_BLOG_PLAN_IDS || '').split(',').map(s => s.trim()).filter(Boolean)

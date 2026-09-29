@@ -6,6 +6,22 @@ services:
     startCommand: pnpm start
     healthCheckPath: /api/health
     envVars:
+      - key: PAYMENTS_MONGODB_URI
+        sync: false
+      - key: PAYMENTS_MONGODB_DB_NAME
+        sync: false
+      - key: PAYMENTS_ENVIRONMENT
+        value: production
+      - key: MEMBERSHIPS_ENABLED
+        value: "true"
+      - key: MEMBERSHIP_WEBSITE_ORIGIN
+        value: https://nexvijo.com
+      - key: MEMBERSHIP_OTP_PEPPER
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
       - key: PAYMENTS_ENABLED
         value: "false"
       - key: PAYMENTS_CREATION_ENABLED

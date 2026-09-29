@@ -7,10 +7,12 @@ import { paymentError } from '../payments/routes.js'
 import { transaction } from '../payments/database.js'
 import { ready, scoped } from './routes.js'
 import { pageSchema, postSchema, publicMembership, emailSchema } from './domain.js'
+import { membershipStatus } from './status.js'
 
 export function membershipManagementRouter(ctx) {
   const router = Router()
   router.use(authenticateManagementUser, authorizeRoles('super_admin', 'admin', 'finance'))
+  router.get('/memberships/status', (_req, res) => res.set('Cache-Control', 'private, no-store').json({ success: true, data: membershipStatus(ctx) }))
   router.use((req, res, next) => {
     ready(ctx); res.set('Cache-Control', 'private, no-store')
     if (req.path.startsWith('/content/') && !['admin', 'super_admin'].includes(req.managementUser.role)) fail('FORBIDDEN', 'Content management requires an administrator.', 403)

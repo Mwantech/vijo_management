@@ -16,6 +16,7 @@ export function paymentError(error, req, res, _next) {
 }
 function ready(ctx) {
   if (!ctx.ready || ctx.connection.readyState !== 1) fail('PAYMENTS_UNAVAILABLE', 'Payment service is unavailable.', 503)
+  if (ctx.providerReady === false) fail('PAYMENTS_CONFIGURATION', 'Payment provider is not configured or is unavailable.', 503)
 }
 export function webhookRouter(ctx) {
   const router = Router()

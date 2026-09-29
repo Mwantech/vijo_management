@@ -7,10 +7,11 @@ import { requestCode, verifyCode, customerFor, memberCookie, sessionToken } from
 import { emailSchema, publicMembership, hasAccess, pageSchema } from './domain.js'
 
 export function ready(ctx) {
-  if (!ctx?.ready || !ctx.memberships?.enabled || ctx.connection.readyState !== 1) fail('MEMBERSHIPS_UNAVAILABLE', 'Membership service is not configured or is temporarily unavailable.', 503)
+  if (!ctx?.ready || ctx.connection?.readyState !== 1) fail('MEMBERSHIP_DATABASE_UNAVAILABLE', 'Membership database is unavailable. Check the management membership service status.', 503)
 }
 export const scoped = ctx => ({ environment: ctx.config.environment })
 export async function requireCustomer(ctx, req) {
+  if (!ctx.memberships?.enabled) fail('MEMBERSHIP_LOGIN_UNAVAILABLE', 'Email sign-in is not configured. Please contact Nexvijo support.', 503)
   const customer = await customerFor(ctx, req)
   if (!customer) fail('UNAUTHORIZED', 'Sign in with your email access code.', 401)
   return customer
@@ -21,11 +22,15 @@ export async function requireEntitlement(ctx, customer) {
 }
 export function membershipRouter(ctx) {
   const router = Router()
-  router.use((req, res, next) => { ready(ctx); res.set('Cache-Control', 'private, no-store'); next() })
-  router.use(cors({ credentials: true, origin(origin, cb) { cb(null, !origin || origin === ctx.memberships.origin) } }))
+  router.use(cors({ credentials: true, origin(origin, cb) { cb(null, !origin || origin === ctx?.memberships?.origin) } }))
+  router.use((req, res, next) => {
+    ready(ctx); res.set('Cache-Control', 'private, no-store')
+    if (!req.path.startsWith('/content/') && !ctx.memberships?.enabled) fail('MEMBERSHIP_LOGIN_UNAVAILABLE', 'Email sign-in is not configured. Please contact Nexvijo support.', 503)
+    next()
+  })
   router.use(json({ limit: '8kb', inflate: false }))
   router.use((req, _res, next) => {
-    if (req.method !== 'GET' && req.get('Origin') !== ctx.memberships.origin) fail('FORBIDDEN', 'Website origin is required.', 403)
+    if (req.method !== 'GET' && (!ctx.memberships?.origin || req.get('Origin') !== ctx.memberships.origin)) fail('FORBIDDEN', 'Website origin is required.', 403)
     next()
   })
   const send = (res, data) => res.json({ success: true, data })

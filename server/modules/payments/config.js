@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { fail } from './domain.js'
+import { ApiError } from '../../errors.js'
 
 export function paymentConfig(env = process.env) {
   if (env.PAYMENTS_ENABLED !== 'true') return { enabled: false }
@@ -14,7 +15,8 @@ export function paymentConfig(env = process.env) {
     WHOP_WEBHOOK_SECRET: z.string().min(10),
   })
   const result = schema.safeParse(env)
-  if (!result.success) fail('PAYMENTS_CONFIGURATION', `Missing or invalid payment settings: ${result.error.issues.map(i => i.path.join('.')).join(', ')}`, 503)
+  if (!result.success) throw new ApiError('PAYMENTS_CONFIGURATION', 'Missing or invalid payment settings.', 503,
+    { fields: result.error.issues.map(i => i.path[0]) })
   const v = result.data
   const db = v.PAYMENTS_MONGODB_DB_NAME
   if ((v.PAYMENTS_ENVIRONMENT === 'production') !== (v.WHOP_ENVIRONMENT === 'production')) fail('PAYMENTS_CONFIGURATION', 'Payment environment and provider mode must match.', 503)

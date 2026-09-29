@@ -13,7 +13,8 @@ export function MembershipsPage() {
   const [page, setPage] = useState(1), [search, setSearch] = useState(''), [draft, setDraft] = useState('')
   const [email, setEmail] = useState(''), [reason, setReason] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false)
   const { user } = useAuth(), client = useQueryClient(), editable = ['admin', 'super_admin'].includes(user.role)
-  const q = useQuery({ queryKey: ['memberships', page, search], queryFn: ({ signal }) => membershipsApi.list(page, search, signal), staleTime: 30000, retry: false })
+  const status = useQuery({ queryKey: ['membership-service-status'], queryFn: ({ signal }) => membershipsApi.status(signal), staleTime: 30000, retry: false })
+  const q = useQuery({ queryKey: ['memberships', page, search], queryFn: ({ signal }) => membershipsApi.list(page, search, signal), staleTime: 30000, retry: false, enabled: status.data?.databaseReady === true })
   const columns: Column<Membership>[] = [
     { key: 'email', label: 'Customer', render: m => <Link to={`/memberships/${m.membershipId}`}>{m.email}</Link> },
     { key: 'plan', label: 'Membership', render: () => 'Premium Blog · Permanent' },
@@ -30,6 +31,15 @@ export function MembershipsPage() {
     catch (e) { setError(e instanceof Error ? e.message : 'Grant failed') } finally { setBusy(false) }
   }
   return <><PageHeader eyebrow="Nexvijo customer access" title="Memberships" description="Permanent premium access, verified purchases and fulfillment history."/>{editable && <p><Link to="/membership-content">Manage blog content</Link></p>}
+    {status.isLoading && <SectionLoading/>}
+    {status.isError && <SectionError message={status.error.message} onRetry={() => void status.refetch()}/>}
+    {status.data && <section className="section" aria-label="Membership service status"><h2>Service status</h2>
+      <p>Database: {status.data.databaseReady ? 'Connected' : 'Unavailable'} · Email sign-in: {status.data.customerLoginReady ? 'Configured' : 'Not ready'} · Automatic Whop sync: {status.data.automaticWhopSyncReady ? 'Configured' : 'Not ready'}</p>
+      {[status.data.databaseIssue, status.data.loginIssue, status.data.providerIssue].filter(issue => issue !== null).map((issue, i) => <p key={i}>{issue.code}{issue.fields.length > 0 && ` — Check server variables: ${issue.fields.join(', ')}`}</p>)}
+      {!status.data.databaseReady && <p>Records cannot be loaded until the payment database is connected and its indexes are initialized. Check server configuration and startup logs; unavailable records are not empty records.</p>}
+      {status.data.databaseReady && !status.data.customerLoginReady && <p>Stored memberships remain accessible to administrators. Customer email sign-in needs separate configuration.</p>}
+      <button className="button button--secondary" onClick={() => void status.refetch()}>Recheck service</button>
+    </section>}
     <form className="filter-bar" onSubmit={e => { e.preventDefault(); setPage(1); setSearch(draft) }}><label>Search email<input value={draft} onChange={e => setDraft(e.target.value)}/></label><button className="button" type="submit">Search</button><button className="button button--secondary" type="button" onClick={() => void q.refetch()}>Refresh</button></form>
     {q.isLoading && <SectionLoading rows={5}/>} {q.isError && <SectionError message={q.error.message} onRetry={() => void q.refetch()}/>}
     {q.data && <><DataTable columns={columns} data={q.data.items}/><div className="page-actions"><button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page} · {q.data.total} memberships</span><button disabled={page >= q.data.totalPages} onClick={() => setPage(p => p + 1)}>Next</button></div></>}
