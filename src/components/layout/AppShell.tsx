@@ -1,6 +1,6 @@
 import { useState, type ComponentType } from 'react'
 import { NavLink,Outlet } from 'react-router-dom'
-import { Activity,BarChart3,Building2,CreditCard,Gauge,HeartPulse,LayoutDashboard,LogOut,Menu,PanelLeftClose,PanelLeftOpen,Settings,TrendingUp,UserRound,WalletCards,X,Zap } from '../common/Icons'
+import { Activity,BarChart3,Building2,CreditCard,Gauge,HeartPulse,LayoutDashboard,LogOut,Menu,PanelLeftClose,PanelLeftOpen,Settings,TrendingUp,UserRound,Users,WalletCards,X,Zap } from '../common/Icons'
 import { platforms } from '../../config/platforms'
 import { useAuth } from '../../context/AuthContext'
 import type { AdminRole } from '../../types/models'

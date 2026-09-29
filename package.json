@@ -16,8 +16,8 @@
     "memberships:grant-owner": "node scripts/grant-membership.mjs",
     "payments:application": "node scripts/payments.mjs",
     "test:payments": "vitest run server/modules/payments/tests",
-    "build": "vite build",
-    "typecheck": "tsc --noEmit",
+    "build": "pnpm typecheck && vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test": "vitest run",
     "lint": "eslint .",
     "preview": "vite preview"
