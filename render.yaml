@@ -6,6 +6,10 @@ services:
     startCommand: pnpm start
     healthCheckPath: /api/health
     envVars:
+      - key: PAYMENTS_ENABLED
+        value: "false"
+      - key: PAYMENTS_CREATION_ENABLED
+        value: "false"
       - key: NODE_ENV
         value: production
       - key: MANAGEMENT_HOST

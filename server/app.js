@@ -9,16 +9,27 @@ import { requestId } from './middleware/requestId.js'
 import { requestLogger } from './middleware/requestLogger.js'
 import { errorHandler, notFound } from './middleware/errors.js'
 import { managementRouter } from './routes/management.routes.js'
+import { paymentRouter, webhookRouter } from './modules/payments/routes.js'
+import { paymentManagementRouter } from './modules/payments/management.routes.js'
+import { membershipRouter } from './modules/memberships/routes.js'
+import { membershipManagementRouter } from './modules/memberships/management.routes.js'
 
 const clientDirectory = fileURLToPath(new URL('../dist', import.meta.url))
 const clientIndex = fileURLToPath(new URL('../dist/index.html', import.meta.url))
 
-export function createManagementApp() {
+export function createManagementApp({ payments } = {}) {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', managementConfig.trustProxy ? 1 : false)
   app.use(requestId)
   app.use(helmet())
+  const customerRoutes = membershipRouter(payments)
+  app.use('/api', (req, res, next) => /^\/(membership|content|premium)(\/|$)/.test(req.path) ? customerRoutes(req, res, next) : next())
+  if (payments?.config.enabled) {
+    // Provider signatures require exact bytes; these routes own their body parsers.
+    app.use('/api/v1/providers', requestLogger, webhookRouter(payments))
+    app.use('/api/v1', requestLogger, paymentRouter(payments))
+  }
   app.use(cors((req, callback) => {
     const origin = req.get('Origin')?.replace(/\/$/, '')
     const requestOrigin = `${req.protocol}://${req.get('host')}`.replace(/\/$/, '')
@@ -41,6 +52,12 @@ export function createManagementApp() {
     data: { service: 'vijo-management-api', status: 'healthy', timestamp: new Date().toISOString() },
     requestId: req.id,
   }))
+  app.use('/api/management/payments', paymentManagementRouter(payments))
+  const membershipAdminRoutes = membershipManagementRouter(payments)
+  app.use('/api/management', (req, res, next) => {
+    if (!/^\/(memberships|content)(\/|$)/.test(req.path)) return next()
+    return membershipAdminRoutes(req, res, next)
+  })
   app.use('/api/management', managementRouter)
 
   if (existsSync(clientIndex)) {

@@ -1,10 +1,12 @@
 import './utils/env.js'
 import { createManagementApp } from './app.js'
 import { assertProductionConfig, managementConfig } from './config/index.js'
+import { initializePayments } from './modules/payments/index.js'
 
 assertProductionConfig()
 
-const app = createManagementApp()
+const payments = await initializePayments()
+const app = createManagementApp({ payments })
 const server = app.listen(managementConfig.port, managementConfig.host, () => {
   console.log(JSON.stringify({
     level: 'info',
@@ -16,8 +18,8 @@ const server = app.listen(managementConfig.port, managementConfig.host, () => {
 
 const shutdown = (signal) => {
   console.log(JSON.stringify({ level: 'info', event: 'server_stopping', signal }))
-  server.close(() => process.exit(0))
-  setTimeout(() => process.exit(1), 10_000).unref()
+  server.close(async () => { await payments.close(); process.exit(0) })
+  setTimeout(() => process.exit(1), 30_000).unref()
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'))
