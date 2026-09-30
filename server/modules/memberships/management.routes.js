@@ -8,6 +8,7 @@ import { transaction } from '../payments/database.js'
 import { ready, scoped } from './routes.js'
 import { pageSchema, postSchema, publicMembership, emailSchema } from './domain.js'
 import { membershipStatus } from './status.js'
+import { products, planSchema } from './products.js'
 
 export function membershipManagementRouter(ctx) {
   const router = Router()
@@ -24,6 +25,7 @@ export function membershipManagementRouter(ctx) {
     next()
   })
   const send = (res, data) => res.json({ success: true, data })
+  router.get('/content/products', (_req, res) => send(res, products))
   router.get('/memberships', async (req, res) => {
     const q = parse(pageSchema, req.query), filter = scoped(ctx)
     if (q.search) filter.email = { $regex: q.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
@@ -41,12 +43,12 @@ export function membershipManagementRouter(ctx) {
     send(res, { ...publicMembership(m), email: m.email, amount: m.amount, currency: m.currency, providerMembershipId: m.providerMembershipId, productId: m.productId, events, receipts })
   })
   router.post('/memberships', async (req, res) => {
-    const dto = parse(z.object({ email: emailSchema, reason: z.string().trim().min(10).max(500) }).strict(), req.body)
+    const dto = parse(z.object({ email: emailSchema, plan: planSchema.default('premium_blog'), reason: z.string().trim().min(10).max(500) }).strict(), req.body)
     let created
     await transaction(ctx.connection, async session => {
       const customer = await ctx.models.Customer.findOne({ ...scoped(ctx), email: dto.email }).session(session)
       ;[created] = await ctx.models.Membership.create([{ ...scoped(ctx), membershipId: id('mem'), email: dto.email, provider: 'manual',
-        status: 'active', paymentStatus: 'manual', startedAt: new Date(), overrideReason: dto.reason,
+        plan: dto.plan, status: 'active', paymentStatus: 'manual', startedAt: new Date(), overrideReason: dto.reason,
         ...(customer?.emailVerifiedAt ? { customerId: customer._id } : {}) }], { session })
       await ctx.models.MembershipEvent.create([{ ...scoped(ctx), eventId: id('evt'), membershipId: created._id, effectKey: `manual:${created.membershipId}`, type: 'ACCESS_GRANTED', actor: req.managementUser.id, reason: dto.reason }], { session })
     })
@@ -67,7 +69,7 @@ export function membershipManagementRouter(ctx) {
   })
   router.get('/content/posts', async (req, res) => {
     const q = parse(pageSchema, req.query)
-    send(res, await ctx.models.Post.find(scoped(ctx)).select('slug title excerpt content visibility category published -_id').sort({ createdAt: -1 }).skip((q.page - 1) * q.limit).limit(q.limit).lean())
+    send(res, await ctx.models.Post.find(scoped(ctx)).select('slug title excerpt content visibility category published requiredEntitlement -_id').sort({ createdAt: -1 }).skip((q.page - 1) * q.limit).limit(q.limit).lean())
   })
   router.put('/content/posts/:slug', async (req, res) => {
     const dto = parse(postSchema, { ...req.body, slug: req.params.slug })

@@ -33,7 +33,7 @@
 .member-grant-form > p { margin: 0 0 18px; font-size: 12px; color: var(--muted); }
 .member-grant-fields { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
 .member-grant-fields label { display: grid; align-content: start; gap: 9px; font-size: 12px; color: #e5e7eb; }
-.member-grant-fields input, .member-grant-fields textarea { min-width: 0; width: 100%; padding: 11px 12px; background: #080808; border: 1px solid var(--border); border-radius: 6px; color: #fff; font: inherit; resize: vertical; }
+.member-grant-fields input, .member-grant-fields textarea, .member-grant-fields select { min-width: 0; width: 100%; padding: 11px 12px; background: #080808; border: 1px solid var(--border); border-radius: 6px; color: #fff; font: inherit; resize: vertical; }
 .member-grant-actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 20px; }
 .member-grant-actions > span { font-size: 11px; color: var(--muted); }
 .member-grant-form .member-form-error { color: #f87171; margin: 16px 0 0; }.member-grant-form .member-form-success { color: var(--primary); margin: 16px 0 0; }

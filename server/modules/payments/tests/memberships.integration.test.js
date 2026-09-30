@@ -10,6 +10,7 @@ import { hasAccess } from '../../memberships/domain.js'
 import { digest } from '../domain.js'
 import { signature } from '../crypto.js'
 import { grantOwnerVerifiedPurchase } from '../../memberships/manual.js'
+import { recordCoursePurchase } from '../../memberships/course-purchases.js'
 
 let repl, ctx, app, code, challengeId
 const origin = 'https://nexvijo.com', email = 'member@example.com'
@@ -135,4 +136,35 @@ it('records owner-verified purchases idempotently without inventing provider rec
   expect(await ctx.models.MembershipReceipt.countDocuments({ membershipId: a._id })).toBe(0)
   await ctx.models.Membership.updateOne({ _id: a._id }, { $set: { revokedAt: new Date() } })
   expect(hasAccess(await grantOwnerVerifiedPurchase(ctx, input))).toBe(false)
+})
+
+it('isolates course purchases, claims them through email verification, and protects both article paths', async () => {
+  const purchase = { email: 'course-only@example.com', name: 'Course learner', plan: 'ai_visual_mastery', providerPaymentId: 'pay_courseOnly', purchasedOn: '2026-09-30', total: '10800', tax: '800', actor: 'test-owner' }
+  const [first, second] = await Promise.all([recordCoursePurchase(ctx, purchase), recordCoursePurchase(ctx, purchase)])
+  expect(first.membershipId).toBe(second.membershipId)
+  expect(first.paymentStatus).toBe('owner_verified')
+  expect(await ctx.models.MembershipReceipt.countDocuments({ membershipId: first._id })).toBe(0)
+  await expect(recordCoursePurchase(ctx, { ...purchase, email: 'someone-else@example.com' })).rejects.toMatchObject({ code: 'PURCHASE_CONFLICT' })
+  await expect(recordCoursePurchase(ctx, { ...purchase, total: '100' })).rejects.toMatchObject({ code: 'INVALID_PURCHASE_TOTAL' })
+  for (const plan of ['ai_visual_mastery', 'ai_training_premium']) await ctx.models.Post.create({ environment: 'test', slug: plan.replaceAll('_', '-'), title: plan, excerpt: 'Safe course preview', content: `PRIVATE_${plan}`, visibility: 'premium', requiredEntitlement: plan, published: true })
+  const listing = await request(app).get('/api/content/posts?plan=ai_visual_mastery')
+  expect(listing.body.data.items).toHaveLength(1)
+  expect(JSON.stringify(listing.body)).not.toContain('PRIVATE_')
+  expect((await request(app).get('/api/content/posts?plan=unknown')).status).toBe(400)
+  expect((await request(app).get('/api/content/posts/ai-visual-mastery')).status).toBe(401)
+  const challenge = await requestCode(ctx, purchase.email, 'course-ip')
+  const token = await verifyCode(ctx, challenge.challengeId, code, 'course-ip')
+  const courseCookie = `nexvijo_member_session=${token}`
+  const me = await request(app).get('/api/membership/me').set('Cookie', courseCookie)
+  expect(me.body.data.accessGranted).toBe(true)
+  expect(me.body.data.blogAccessGranted).toBe(false)
+  expect(me.body.data.memberships[0].productName).toBe('AI Visual Content Mastery')
+  for (const path of ['/api/content/posts/', '/api/premium/posts/']) {
+    expect((await request(app).get(`${path}ai-visual-mastery`).set('Cookie', courseCookie)).status).toBe(200)
+    expect((await request(app).get(`${path}ai-training-premium`).set('Cookie', courseCookie)).status).toBe(403)
+    expect((await request(app).get(`${path}protected-post`).set('Cookie', courseCookie)).status).toBe(403)
+  }
+  await ctx.models.Membership.updateOne({ _id: first._id }, { $set: { revokedAt: new Date() } })
+  expect(hasAccess(await recordCoursePurchase(ctx, purchase))).toBe(false)
+  expect((await request(app).get('/api/content/posts/ai-visual-mastery').set('Cookie', courseCookie)).status).toBe(403)
 })
