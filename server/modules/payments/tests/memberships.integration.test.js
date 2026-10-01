@@ -11,6 +11,7 @@ import { digest } from '../domain.js'
 import { signature } from '../crypto.js'
 import { grantOwnerVerifiedPurchase } from '../../memberships/manual.js'
 import { recordCoursePurchase } from '../../memberships/course-purchases.js'
+import { emailPreview, sendVerificationEmail } from '../../memberships/email-service.js'
 
 let repl, ctx, app, code, challengeId
 const origin = 'https://nexvijo.com', email = 'member@example.com'
@@ -167,4 +168,29 @@ it('isolates course purchases, claims them through email verification, and prote
   await ctx.models.Membership.updateOne({ _id: first._id }, { $set: { revokedAt: new Date() } })
   expect(hasAccess(await recordCoursePurchase(ctx, purchase))).toBe(false)
   expect((await request(app).get('/api/content/posts/ai-visual-mastery').set('Cookie', courseCookie)).status).toBe(403)
+})
+
+it('guards email previews/sends by role, origin, purchase and preview hash; concurrent sends are deduplicated', async () => {
+  const m = await recordCoursePurchase(ctx, { email: 'mail-test@example.com', name: 'Email learner', plan: 'ai_visual_mastery', providerPaymentId: 'pay_mailTest', purchasedOn: '2026-10-01', total: '10000', tax: '0', actor: 'test-owner' })
+  const admin = createSessionCookie({ id: 'mail-admin', role: 'super_admin' }).split(';')[0]
+  const finance = createSessionCookie({ id: 'mail-finance', role: 'finance' }).split(';')[0]
+  const path = '/api/management/memberships/email/preview'
+  expect((await request(app).post(path).set('Cookie', finance).send({ membershipId: m.membershipId })).status).toBe(403)
+  expect((await request(app).post(path).set('Cookie', admin).send({ membershipId: m.membershipId })).status).toBe(403)
+  const preview = await request(app).post(path).set('Cookie', admin).set('Origin', 'http://127.0.0.1').set('Host', '127.0.0.1').send({ membershipId: m.membershipId })
+  expect(preview.status).toBe(200)
+  expect(preview.body.data.to).toBe(m.email)
+  let sends = 0
+  ctx.memberships.from = 'Nexvijo <test@example.com>'
+  ctx.sendVerificationEmail = async payload => { sends++; expect(payload.reply_to).toBe('company@nexvijo.com'); return { id: 'email-test-provider-id' } }
+  await expect(sendVerificationEmail(ctx, m.membershipId, '0'.repeat(64), 'test-admin')).rejects.toMatchObject({ code: 'PREVIEW_CHANGED' })
+  await Promise.allSettled([1, 2].map(() => sendVerificationEmail(ctx, m.membershipId, preview.body.data.previewHash, 'test-admin')))
+  expect(sends).toBe(1)
+  expect((await sendVerificationEmail(ctx, m.membershipId, preview.body.data.previewHash, 'test-admin')).status).toBe('already_sent')
+  const history = await request(app).get('/api/management/memberships/email/history').set('Cookie', admin)
+  expect(history.status).toBe(200)
+  expect(history.body.data.items.some(e => e.type === 'VERIFICATION_EMAIL_ACCEPTED' && e.email === m.email)).toBe(true)
+  await ctx.models.Membership.updateOne({ _id: m._id }, { $set: { revokedAt: new Date() } })
+  await expect(emailPreview(ctx, m.membershipId)).rejects.toMatchObject({ code: 'PURCHASE_NOT_CONFIRMED' })
+  delete ctx.sendVerificationEmail
 })

@@ -1,4 +1,10 @@
 .membership-directory { display: grid; gap: 22px; }
+.member-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+.member-email-tab { display: grid; gap: 24px; min-width: 0; }
+.member-email-tab h2 { font-size: 16px; color: #fff; }
+.member-email-tab p { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.member-email-preview { border-top: 1px solid var(--border); margin-top: 22px; padding-top: 18px; }
+.member-email-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 13px; line-height: 1.8; padding: 20px; background: #080808; border: 1px solid var(--border); border-radius: 6px; }
 .membership-directory .page-header { margin-bottom: 0; }
 .member-directory-panel, .member-grant { border: 1px solid var(--border); border-radius: 10px; background: var(--surface); min-width: 0; overflow: hidden; }
 .member-directory-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px 18px; }

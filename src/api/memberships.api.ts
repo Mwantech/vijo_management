@@ -3,6 +3,8 @@ export interface Membership { membershipId: string; email: string; plan: string;
 export interface MembershipDetail extends Membership { events: { eventId: string; type: string; actor: string; reason?: string; createdAt: string }[]; receipts: { providerPaymentId: string; amount: string; currency: string; paidAt: string; refundedAmount: string }[] }
 export interface BlogPost { slug: string; title: string; excerpt: string; content: string; visibility: 'public' | 'premium'; category: string; published: boolean; requiredEntitlement?: string }
 export interface MembershipProduct { plan: string; name: string }
+export interface MembershipEmailPreview { to: string; replyTo: string; subject: string; text: string; previewHash: string }
+export interface MembershipEmailEvent { eventId: string; email?: string; plan?: string; type: string; createdAt: string; emailVerified: boolean; accessGranted: boolean; emailId?: string }
 const base = '/api/management'
 export interface MembershipServiceStatus {
   databaseReady: boolean; customerLoginReady: boolean; automaticWhopSyncReady: boolean
@@ -11,6 +13,9 @@ export interface MembershipServiceStatus {
   providerIssue: { code: string; fields: string[] } | null
 }
 export const membershipsApi = {
+  emailPreview: (membershipId: string) => apiRequest<MembershipEmailPreview>(`${base}/memberships/email/preview`, { method: 'POST', body: JSON.stringify({ membershipId }) }),
+  sendEmail: (membershipId: string, previewHash: string) => apiRequest<{ status: string; emailId: string }>(`${base}/memberships/email/send`, { method: 'POST', body: JSON.stringify({ membershipId, previewHash }) }),
+  emailHistory: (page: number, signal?: AbortSignal) => apiRequest<{ items: MembershipEmailEvent[]; totalPages: number }>(`${base}/memberships/email/history`, { signal }, { page, limit: 20 }),
   products: (signal?: AbortSignal) => apiRequest<MembershipProduct[]>(`${base}/content/products`, { signal }),
   status: (signal?: AbortSignal) => apiRequest<MembershipServiceStatus>(`${base}/memberships/status`, { signal }),
   list: (page: number, search: string, signal?: AbortSignal) => apiRequest<{items: Membership[]; totalPages: number; total: number}>(`${base}/memberships`, { signal }, { page, search, limit: 20 }),

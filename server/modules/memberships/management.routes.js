@@ -9,6 +9,7 @@ import { ready, scoped } from './routes.js'
 import { pageSchema, postSchema, publicMembership, emailSchema } from './domain.js'
 import { membershipStatus } from './status.js'
 import { products, planSchema } from './products.js'
+import { membershipEmailRouter } from './email.routes.js'
 
 export function membershipManagementRouter(ctx) {
   const router = Router()
@@ -25,6 +26,7 @@ export function membershipManagementRouter(ctx) {
     next()
   })
   const send = (res, data) => res.json({ success: true, data })
+  router.use('/memberships/email', membershipEmailRouter(ctx))
   router.get('/content/products', (_req, res) => send(res, products))
   router.get('/memberships', async (req, res) => {
     const q = parse(pageSchema, req.query), filter = scoped(ctx)

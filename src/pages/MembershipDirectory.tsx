@@ -10,11 +10,13 @@ import { DataTable, type Column } from '../components/common/DataTable'
 import { StatusBadge } from '../components/common/StatusBadge'
 import { SectionError } from '../components/common/SectionState'
 import './memberships.css'
+import { MembershipEmailTab } from './MembershipEmailTab'
 
 const date = (value?: string | null) => value ? new Date(value).toLocaleString('en-GB', { timeZone: 'Africa/Nairobi', day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'
 const paymentLabel = (status: string) => ({ owner_verified: 'Owner verified', verified: 'Payment verified', manual: 'Manual grant' })[status] || status.replaceAll('_', ' ')
 
 export function MembershipsPage() {
+  const [tab, setTab] = useState<'members' | 'email'>('members')
   const [page, setPage] = useState(1), [search, setSearch] = useState(''), [draft, setDraft] = useState('')
   const [plan, setPlan] = useState('premium_blog')
   const catalog = useQuery({ queryKey: ['membership-products'], queryFn: ({ signal }) => membershipsApi.products(signal), staleTime: 300000 })
@@ -43,6 +45,8 @@ export function MembershipsPage() {
   }
   return <div className="membership-directory">
     <PageHeader eyebrow="Nexvijo · Member access" title="Memberships" description="Your members, their purchases, and the content they can access." actions={editable && <Link className="button button--secondary" to="/membership-content"><BookOpen size={15} aria-hidden="true"/> Manage content</Link>}/>
+    {editable && <nav className="member-tabs" aria-label="Membership views"><button className={`button ${tab === 'members' ? 'button--primary' : 'button--secondary'}`} aria-pressed={tab === 'members'} onClick={() => setTab('members')}>Members</button><button className={`button ${tab === 'email' ? 'button--primary' : 'button--secondary'}`} aria-pressed={tab === 'email'} onClick={() => setTab('email')}>Send email</button></nav>}
+    {tab === 'email' && editable ? <MembershipEmailTab/> : <>
     <section className="member-directory-panel" aria-label="Member directory">
       <div className="member-directory-heading"><div><h2>Member directory {q.data && <span className="member-count">{q.data.total.toLocaleString()}</span>}</h2><p>{search ? 'Matching memberships' : 'All memberships'} · Premium content access</p></div><span className="member-product"><BookOpen size={14} aria-hidden="true"/> Nexvijo Blog</span></div>
       <form className="member-toolbar" onSubmit={e => { e.preventDefault(); setPage(1); setSearch(draft.trim()) }}>
@@ -64,5 +68,6 @@ export function MembershipsPage() {
         {error && <p role="alert" className="member-form-error">{error}</p>}{success && <p role="status" className="member-form-success">{success}</p>}
       </form>
     </details>}
+    </>}
   </div>
 }
