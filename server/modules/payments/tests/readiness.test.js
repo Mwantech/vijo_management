@@ -9,15 +9,24 @@ function dependencies() {
 }
 afterEach(() => vi.restoreAllMocks())
 it('opens stored records with checkout and customer login disabled', async () => {
-  const deps = dependencies(), ctx = await initializePayments(env, deps)
+  const deps = dependencies(), ctx = await initializePayments({ ...env, MEMBERSHIPS_ENABLED: 'false' }, deps)
   expect(membershipStatus(ctx)).toMatchObject({ databaseReady: true, customerLoginReady: false, automaticWhopSyncReady: false })
   expect(deps.startWorker).not.toHaveBeenCalled()
   await ctx.close()
   expect(ctx.ready).toBe(false)
 })
+it('starts customer login without feature flags when its credentials are configured', async () => {
+  const deps = dependencies()
+  const ctx = await initializePayments({ ...env, MEMBERSHIP_OTP_PEPPER: 'p'.repeat(32),
+    RESEND_API_KEY: 'test-only-key', RESEND_FROM_EMAIL: 'Nexvijo <sender@example.com>' }, deps)
+  expect(membershipStatus(ctx)).toMatchObject({ databaseReady: true, customerLoginReady: true, automaticWhopSyncReady: false })
+  expect(ctx.memberships.origin).toBe('https://nexvijo.com')
+  expect(deps.startWorker).not.toHaveBeenCalled()
+  await ctx.close()
+})
 it('missing email settings do not disable the database or configured public origin', async () => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
-  const ctx = await initializePayments({ ...env, MEMBERSHIPS_ENABLED: 'true', MEMBERSHIP_WEBSITE_ORIGIN: 'https://nexvijo.com' }, dependencies())
+  const ctx = await initializePayments(env, dependencies())
   expect(ctx.ready).toBe(true)
   expect(ctx.memberships.origin).toBe('https://nexvijo.com')
   expect(membershipStatus(ctx).loginIssue.fields).toContain('RESEND_API_KEY')

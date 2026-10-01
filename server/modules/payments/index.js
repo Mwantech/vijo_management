@@ -2,7 +2,7 @@ import { paymentConfig } from './config.js'
 import { connectPayments, checkIndexes } from './database.js'
 import { createWhop } from './providers/whop.js'
 import { startWorker } from './worker.js'
-import { membershipConfig } from '../memberships/config.js'
+import { membershipConfig, DEFAULT_MEMBERSHIP_ORIGIN } from '../memberships/config.js'
 import { paymentDatabaseConfig } from './database-config.js'
 import { configurationIssue } from '../memberships/status.js'
 
@@ -20,9 +20,9 @@ export async function initializePayments(env = process.env, dependencies = {}) {
     console.error(JSON.stringify({ level: 'error', event: 'membership_configuration_invalid', ...ctx.membershipIssue }))
   }
   // Preserve the trusted public-content origin even if email credentials are incomplete.
-  if (!ctx.memberships.origin && env.MEMBERSHIP_WEBSITE_ORIGIN) {
+  if (!ctx.memberships.origin) {
     try {
-      const url = new URL(env.MEMBERSHIP_WEBSITE_ORIGIN)
+      const url = new URL(env.MEMBERSHIP_WEBSITE_ORIGIN ?? DEFAULT_MEMBERSHIP_ORIGIN)
       if (url.protocol === 'https:' || (env.NODE_ENV !== 'production' && url.protocol === 'http:')) ctx.memberships.origin = url.origin
     } catch { /* Invalid origins remain disallowed. */ }
   }

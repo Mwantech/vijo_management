@@ -40,7 +40,8 @@ Artem's failed training payment is excluded. Training rows for alienpoplar, Chri
 and jazzymarvel12 need confirmation of successful payment before inclusion.
 
 Before sending, check live `/blog/membership` and `/api/membership/me`. Unauthenticated
-`/me` should return 401, not 503. Configure `MEMBERSHIPS_ENABLED=true`,
-`MEMBERSHIP_WEBSITE_ORIGIN=https://nexvijo.com`, `MEMBERSHIP_OTP_PEPPER`, `RESEND_API_KEY`,
+`/me` should return 401, not 503. Membership login and the Nexvijo website origin now
+default on in code; remove any explicit `MEMBERSHIPS_ENABLED=false` override.
+Configure `MEMBERSHIP_OTP_PEPPER`, `RESEND_API_KEY`,
 and `RESEND_FROM_EMAIL` on the backend and verify actual email-code delivery using an
 authorized test account. Never send customers to a known broken verification flow.

@@ -40,7 +40,8 @@ states without resending. Recipient input files stay outside version control.
 ## Deployment
 
 Deploy Vijo Management and the Nexvijo website changes together before publishing local
-course content. The existing `MEMBERSHIPS_ENABLED`, Resend, origin and OTP settings remain
-required for Nexvijo email login. Whop access emails use the existing Whop links rather
+course content. Membership login and the Nexvijo origin default on in code; Resend and
+OTP credentials remain required. An explicit `MEMBERSHIPS_ENABLED=false` disables login.
+Whop access emails use the existing Whop links rather
 than claiming new local pages are deployed. Customers must use their purchasing Whop
 account; the product URL itself is public, not a personal access token.
